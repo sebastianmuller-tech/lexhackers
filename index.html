@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NODE // LEX HACKERS — Terminal</title>
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<style>
+  :root{
+    --bg:#05070b; --panel:#071018; --glow:#00ff9c; --accent:#ff4b8a; --muted:#7fb79b;
+  }
+  html,body{height:100%;margin:0;background:
+    radial-gradient(900px 400px at 10% 10%, rgba(255,75,138,0.03), transparent),
+    linear-gradient(180deg,#02040a 0%, #041021 60%, #00060b 100%), var(--bg);
+    font-family: "Courier New", Courier, monospace; color:#cfeee0;}
+  .wrap{max-width:920px;margin:32px auto;padding:22px;border-radius:10px;}
+  .card{background:linear-gradient(180deg, rgba(0,0,0,0.2), rgba(255,255,255,0.01)); padding:20px; border-radius:10px;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.6), inset 0 0 40px rgba(0,255,156,0.02); border:1px solid rgba(0,255,156,0.04);}
+  h1{margin:0;color:var(--glow);text-shadow:0 0 8px rgba(0,255,156,0.08);font-size:22px}
+  .lead{color:var(--muted);margin-top:6px;font-size:13px}
+  .terminal{margin-top:14px;background:linear-gradient(180deg,#021218,#04121a); padding:18px;border-radius:8px;border:1px solid rgba(0,255,156,0.04);}
+  .line{font-size:15px;line-height:1.6}
+  .prompt{color:#9df2c1}
+  .question-box{margin-top:16px}
+  label{display:block;color:#aeeec1;margin-bottom:8px}
+  input[type="text"]{
+    width:100%; padding:12px 10px; border-radius:8px; background:#041217; color:#dfffe8;
+    border:1px solid rgba(0,255,156,0.06); font-family:inherit; font-size:15px;
+  }
+  .small{font-size:12px;color:#89cda3;margin-top:6px}
+  .btn{
+    display:inline-block;margin-top:12px;padding:10px 14px;border-radius:8px;background:linear-gradient(90deg,var(--glow),var(--accent));
+    color:#02110a;border:0;cursor:pointer;font-weight:700;letter-spacing:.6px;
+  }
+  .status{margin-top:10px;height:22px}
+  .error{color:#ff9c9c}
+  .success{color:#b9ffd1}
+  .progress{margin-top:12px;color:#9adfac;font-size:13px}
+  .codebox{margin-top:18px;padding:16px;background:#031317;border-radius:8px;border:1px dashed rgba(0,255,156,0.06); color:#98f0c6; text-align:center; font-family: monospace; font-size:18px}
+  .glitch{
+    display:inline-block;
+    position:relative;
+    color:var(--glow);
+    text-shadow:0 0 8px rgba(0,255,156,0.12);
+  }
+  /* small cinematic flicker */
+  @keyframes flicker {
+    0% { opacity: 1; }
+    5% { opacity: 0.6; transform: translateX(.5px); }
+    10% { opacity: 1; }
+    30% { opacity: 0.9; transform: translateX(-.5px); }
+    100% { opacity: 1; }
+  }
+  .flicker{ animation: flicker 3.2s linear infinite; }
+  footer{margin-top:18px;color:#6e9b87;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>NODE // LEX HACKERS</h1>
+    <div class="lead">Resuelve cada pregunta. Solo si cada respuesta es correcta avanzarás a la siguiente. Al completar todas, se revela el siguiente número del código.</div>
+
+    <div class="terminal" id="terminal">
+      <div class="line prompt flicker">> CONNECTION ESTABLISHED — AUTH SEQUENCE START</div>
+      <div class="line small">Sigue las instrucciones. Respuestas normalizadas: sin mayúsculas/espacios al inicio o final. Números aceptan comas/puntos/separadores.</div>
+
+      <div id="questionArea" class="question-box"></div>
+
+      <div class="status" id="status"></div>
+
+      <div class="progress" id="progress"></div>
+
+      <div id="reveal" class="codebox" style="display:none">
+        <div class="success"><span class="glitch">ACCESO PERMITIDO</span></div>
+        <div style="margin-top:8px">Siguiente número del código: <strong id="nextCode">1966</strong></div>
+      </div>
+    </div>
+
+    <footer>Interfaz local. Para publicar copia el archivo en GitHub Pages / Netlify. Edita la variable NEXT_CODE en el script para mostrar otro número.</footer>
+  </div>
+</div>
+
+<script>
+/* -------------------------
+   EDITAR AQUÍ SI QUIERES
+   -------------------------
+   Cambia NEXT_CODE por lo que desees mostrar al final.
+*/
+const NEXT_CODE = "1966"; // <--- reemplaza por tu número final si quieres
+
+/* Preguntas y validadores (1 a 1).  
+   Se muestran en secuencia; cada una debe validarse para avanzar.
+   Las validaciones toleran distintos formatos (espacios, puntuación).
+*/
+const QNA = [
+  {
+    q: '1) ¿Cuántas ubicaciones (“locations”) tiene Dentons en el mundo, según su página de “Global Reach / Global Roles”?',
+    src: 'Fuente: Dentons',
+    validator: (raw)=>{
+      // debe equivaler a 166 exactamente
+      const n = normalizeNumeric(raw);
+      return n === "166";
+    }
+  },
+  {
+    q: '2) ¿En cuántos países opera Dentons, según su página que indica “…spanning … countries”?',
+    src: 'Fuente: Dentons',
+    validator: (raw)=>{
+      const n = normalizeNumeric(raw);
+      return n === "82";
+    }
+  },
+  {
+    q: '3) Según la página de “Latin America and the Caribbean”, ¿cuántas oficinas tiene Dentons en esa región?',
+    src: 'Fuente: Dentons',
+    validator: (raw)=>{
+      const n = normalizeNumeric(raw);
+      return n === "36";
+    }
+  },
+  {
+    q: '4) Según rankings de firmas grandes por ingresos, ¿cuál fue el ingreso anual reportado de Dentons (aprox.) en miles de millones USD?',
+    src: 'Fuente: Wikipedia',
+    validator: (raw)=>{
+      const n = normalizeNumeric(raw);
+      if(!n) return false;
+      const x = parseFloat(n);
+      if(isNaN(x)) return false;
+      return Math.abs(x - 2.94) <= 0.05; // tolerancia +/- 0.05
+    }
+  },
+  {
+    q: '5) Según su propia presentación, ¿cuántos abogados / legal professionals tiene Dentons globalmente (aprox. “12,000+”, etc.)?',
+    src: 'Fuentes: Dentons; nonbillable.co.uk',
+    validator: (raw)=>{
+      const n = normalizeNumeric(raw);
+      if(!n) return false;
+      const x = parseInt(n.replace(/\..*/,''),10);
+      if(isNaN(x)) return false;
+      return x >= 12000 && x < 13000;
+    }
+  }
+];
+
+/* -------------------------
+   LÓGICA DE INTERFAZ
+   ------------------------- */
+let currentIndex = 0;
+const qArea = document.getElementById('questionArea');
+const statusEl = document.getElementById('status');
+const progressEl = document.getElementById('progress');
+const revealEl = document.getElementById('reveal');
+const nextCodeEl = document.getElementById('nextCode');
+
+nextCodeEl.textContent = NEXT_CODE;
+
+// Normalizadores
+function normalizeNumeric(v){
+  if(v === undefined || v === null) return "";
+  let s = (""+v).trim().toLowerCase();
+  s = s.replace(/,+/g, ".");       // comas decimales a punto
+  s = s.replace(/[^\d.]/g, "");    // elimina todo excepto dígitos y punto
+  const parts = s.split(".");
+  if(parts.length > 2){
+    const dec = parts.pop();
+    s = parts.join("") + "." + dec;
+  }
+  const first = s.indexOf(".");
+  if(first !== -1){
+    s = s.slice(0, first+1) + s.slice(first+1).replace(/\./g, "");
+  }
+  return s;
+}
+function normalizeText(v){
+  return (v||"").toString().trim().toLowerCase();
+}
+
+// Render pregunta actual
+function renderCurrent(){
+  qArea.innerHTML = '';
+  statusEl.innerHTML = '';
+  if(currentIndex >= QNA.length){
+    // terminado
+    progressEl.textContent = 'Todas las preguntas respondidas.';
+    revealEl.style.display = 'block';
+    return;
+  }
+  const item = QNA[currentIndex];
+  const container = document.createElement('div');
+  container.className = 'qblock';
+  container.innerHTML = `
+    <div class="line"><label><strong>${item.q}</strong></label></div>
+    <div class="line small" style="margin-top:6px">${item.src}</div>
+    <input id="answerInput" type="text" placeholder="Escribe tu respuesta y presiona ENTER o clic en Validar" autofocus />
+    <div style="margin-top:10px">
+      <button id="btnValidate" class="btn">Validar</button>
+      <button id="btnHint" class="btn" style="background:transparent;color:var(--glow);border:1px solid rgba(0,255,156,0.06);margin-left:8px">Pista</button>
+    </div>
+  `;
+  qArea.appendChild(container);
+
+  const input = document.getElementById('answerInput');
+  input.focus();
+  // Enter para validar
+  input.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') validateCurrent();
+  });
+  document.getElementById('btnValidate').addEventListener('click', validateCurrent);
+  document.getElementById('btnHint').addEventListener('click', ()=>{
+    showHint(currentIndex);
+  });
+  updateProgress();
+}
+
+function updateProgress(){
+  progressEl.textContent = `Pregunta ${currentIndex+1} de ${QNA.length}`;
+}
+
+function validateCurrent(){
+  const raw = document.getElementById('answerInput').value;
+  const validator = QNA[currentIndex].validator;
+  let ok = false;
+  try {
+    ok = !!validator(raw);
+  } catch(e){
+    ok = false;
+  }
+  if(ok){
+    statusEl.innerHTML = `<span class="success">Respuesta correcta. Avanzando a la siguiente pregunta…</span>`;
+    currentIndex++;
+    setTimeout(()=>{
+      renderCurrent();
+    }, 800);
+  } else {
+    statusEl.innerHTML = `<span class="error">Respuesta incorrecta. Revisa el formato y vuelve a intentar.</span>`;
+    // pequeño shake visual
+    const input = document.getElementById('answerInput');
+    if(input){
+      input.animate([{ transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(0)' }], { duration: 300 });
+      input.focus();
+    }
+  }
+}
+
+function showHint(idx){
+  // pistas sutiles: puedes personalizar o eliminarlas
+  const hints = [
+    'Sugerencia: es un número exacto que figura en el panel "Global Reach".',
+    'Busca la frase "spanning ... countries" en la página oficial.',
+    'Cuenta las oficinas listadas en la sección Latinoamérica.',
+    'Formato aproximado en miles de millones (p. ej. 2.94). Acepta coma o punto como decimal.',
+    'Es un número redondeado de profesionales; formatos como "12 000" o "12000" son válidos.'
+  ];
+  statusEl.innerHTML = `<span class="small">${hints[idx] || ''}</span>`;
+}
+
+// inicializar
+renderCurrent();
+</script>
+</body>
+</html>
